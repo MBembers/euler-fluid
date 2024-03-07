@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+	<head>
+		<title>Euler Fluid</title>
+		<style>
+			body {
+				font-family: verdana;
+				font-size: 15px;
+			}
+			.button {
+				background-color: #606060;
+				border: none;
+				color: white;
+				padding: 10px 10px;
+				font-size: 16px;
+				margin: 4px 2px;
+				cursor: pointer;
+			}
+			.slider {
+				-webkit-appearance: none;
+				width: 80px;
+				height: 6px;
+				border-radius: 5px;
+				background: #d3d3d3;
+				outline: none;
+				opacity: 0.7;
+				-webkit-transition: 0.2s;
+				transition: opacity 0.2s;
+			}
+		</style>
+	</head>
+
+	<body>
+		<!-- <button class="button" onclick="setupScene(1)">Wind Tunnel</button>
+		<button class="button" onclick="setupScene(3)">Hires Tunnel</button>
+		<button class="button" onclick="setupScene(0)">Tank</button>
+		<button class="button" onclick="setupScene(2)">Paint</button> -->
+
+		<span id="avg-vel"></span>
+
+		<canvas id="myCanvas" style="border: red 2px solid"></canvas>
+		<script src="simulation.js" type="module"></script>
+	</body>
+</html>
