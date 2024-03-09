@@ -1,10 +1,10 @@
 export default class Cell {
-	constructor(u, v, s, x, y) {
+	constructor(u, v, s, p, smoke, color) {
 		this.u = u;
 		this.v = v;
 		this.s = s;
-		this.p = 0;
-		this.x = x;
-		this.y = y;
+		this.p = p;
+		this.smoke = smoke;
+		this.color = color != undefined ? color : `rgba(0,0,0,0)`;
 	}
 }

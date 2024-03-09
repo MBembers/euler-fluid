@@ -32,23 +32,82 @@ function simulate() {
 
 function draw() {
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
-	let sus = 0;
 	for (let i = 0; i < scene.fluid.sizeY; i++) {
 		for (let j = 0; j < scene.fluid.sizeX; j++) {
-			sus++;
 			let cell = scene.fluid.c[i][j];
 			// if (cell.s === 1) ctx.fillStyle = "lightblue";
-			ctx.fillStyle = `rgba(${(cell.u + cell.v) * 20}, 100, 100, 1)`;
-			if (cell.s === 0) ctx.fillStyle = "black";
+			// ctx.fillStyle = cell.color;
+			ctx.fillStyle = `rgba(0,0,0,${1 - cell.smoke})`;
+			if (cell.s === 0) ctx.fillStyle = "coral";
 			ctx.fillRect(
 				scaleX(j * h),
 				scaleY(i * h),
-				scale * h + 1,
-				scale * h + 1
+				scale * h + 0.2,
+				scale * h + 0.2
 			);
 		}
 	}
 }
+
+let mouseDown = false;
+
+function startDrag(x, y) {
+	let bounds = canvas.getBoundingClientRect();
+
+	let mx = x - bounds.left - canvas.clientLeft;
+	let my = y - bounds.top - canvas.clientTop;
+	mouseDown = true;
+
+	x = mx / scale;
+	y = (canvas.height - my) / scale;
+
+	// setObstacle(x, y, true);
+}
+
+function drag(x, y) {
+	if (mouseDown) {
+		let bounds = canvas.getBoundingClientRect();
+		let mx = x - bounds.left - canvas.clientLeft;
+		let my = y - bounds.top - canvas.clientTop;
+		x = mx / scale;
+		y = (canvas.height - my) / scale;
+		// setObstacle(x, y, false);
+	}
+}
+
+function endDrag() {
+	mouseDown = false;
+}
+
+canvas.addEventListener("mousedown", (event) => {
+	startDrag(event.x, event.y);
+});
+
+canvas.addEventListener("mouseup", (event) => {
+	endDrag();
+});
+
+canvas.addEventListener("mousemove", (event) => {
+	drag(event.x, event.y);
+});
+
+canvas.addEventListener("touchstart", (event) => {
+	startDrag(event.touches[0].clientX, event.touches[0].clientY);
+});
+
+canvas.addEventListener("touchend", (event) => {
+	endDrag();
+});
+
+canvas.addEventListener(
+	"touchmove",
+	(event) => {
+		event.preventDefault();
+		event.stopImmediatePropagation();
+		drag(event.touches[0].clientX, event.touches[0].clientY);
+	},
+	{ passive: false }
+);
 
 function update() {
 	simulate();
