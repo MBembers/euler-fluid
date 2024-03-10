@@ -83,8 +83,15 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 		/>Overrelax
 		<br />
 		<canvas id="myCanvas" style="border: 2px solid"></canvas>
+		<br />
+		<span id="avg-vel"></span>
+		<span id="max-vel"></span>
+		<span id="fps"></span>
 
 		<script>
+			const avg_vel_label = document.getElementById("avg-vel");
+			const max_vel_label = document.getElementById("max-vel");
+			const fps_label = document.getElementById("fps");
 			var canvas = document.getElementById("myCanvas");
 			var c = canvas.getContext("2d");
 			canvas.width = window.innerWidth - 20;
@@ -842,9 +849,29 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 				scene.frameNr++;
 			}
 
+			let lastTime = 0;
+			let fps = 0;
+			let calc_time = 0;
+			let draw_time = 0;
+
 			function update() {
+				let delta = (performance.now() - lastTime) / 1000;
+				lastTime = performance.now();
+				fps = 1 / delta;
+
+				let now = performance.now();
 				simulate();
+				calc_time = performance.now() - now;
+
+				now = performance.now();
 				draw();
+				draw_time = performance.now() - now;
+
+				fps_label.innerHTML = `FPS: ${fps.toFixed(
+					2
+				)} Calc time: ${calc_time.toFixed(
+					2
+				)}ms Draw time: ${draw_time.toFixed(2)}ms`;
 				requestAnimationFrame(update);
 			}
 

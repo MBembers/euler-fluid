@@ -5,12 +5,12 @@ export default class Scene {
 		this.real_width = real_width;
 		this.real_height = real_height;
 		this.h = h;
-		this.gravity = -9.81;
+		this.gravity = 9.81;
 		this.density = 1000;
 		this.dt = 1.0 / 60.0;
 		this.numIters = 40;
 		this.frameNr = 0;
-		this.overRelaxation = 1.7; // 1.9
+		this.overRelaxation = 1.9; // 1.9
 		this.obstacleX = 0.0;
 		this.obstacleY = 0.0;
 		this.obstacleRadius = 0.15;
@@ -28,6 +28,12 @@ export default class Scene {
 		this.sizeX += 2;
 		this.sizeY += 2;
 
-		this.fluid = new Fluid(this.density, this.sizeX, this.sizeY, this.h);
+		this.fluid = new Fluid(
+			this.density,
+			this.sizeX,
+			this.sizeY,
+			this.h,
+			this.gravity
+		);
 	}
 }
