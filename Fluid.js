@@ -46,20 +46,10 @@ export default class Fluid {
 		}
 	}
 
-	// calcDivergence(x, y, overRelaxation) {
-	// 	let divergence = 0;
-	// 	divergence +=
-	// 		overRelaxation *
-	// 		(this.u[(y + 1) * this.sizeX + x] - this.u[y * this.sizeX + x]);
-	// 	divergence +=
-	// 		overRelaxation *
-	// 		(this.v[y * this.sizeX + x + 1] - this.v[y * this.sizeX + x]);
-	// 	return divergence;
-	// }
-
 	projection(numIters, overRelaxation, dt) {
 		// console.log(this.smoke[(20) * this.sizeX + 20]);
 		let cp = (this.density * this.h) / dt;
+		this.p.fill(0);
 
 		for (let iter = 0; iter < numIters; iter++) {
 			for (let i = 1; i < this.sizeY - 1; i++) {
@@ -81,7 +71,7 @@ export default class Fluid {
 					let p = divergence / s_sum;
 
 					p *= overRelaxation;
-					this.p[i * this.sizeX + j] += p * cp;
+					this.p[i * this.sizeX + j] += p * -cp;
 
 					if (s_sum === 0) continue;
 					this.u[i * this.sizeX + j] +=
@@ -95,7 +85,6 @@ export default class Fluid {
 
 					this.v[i * this.sizeX + j + 1] -=
 						p * this.s[i * this.sizeX + j + 1];
-					p = -p;
 				}
 			}
 		}

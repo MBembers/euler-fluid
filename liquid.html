@@ -39,14 +39,19 @@
 		<button class="button" onclick="setupScene(2)">Paint</button> -->
 
 		<canvas id="myCanvas" style="border: black 2px solid"></canvas>
-		streamlines: <input type="checkbox" id="stream-btn" /> smoke:
-		<input type="checkbox" id="smoke-btn" checked />
+		streamlines:<input type="checkbox" id="stream-btn" /> smoke:<input
+			type="checkbox"
+			id="smoke-btn"
+			checked
+		/>
+		pressure:<input type="checkbox" id="pressure-btn" />
 
 		<br />
 
 		<span id="avg-vel"></span>
 		<span id="max-vel"></span>
 		<span id="fps"></span>
+		<span id="pressure"></span>
 		<script src="simulation.js" type="module"></script>
 	</body>
 </html>

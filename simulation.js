@@ -7,6 +7,8 @@ const max_vel_label = document.getElementById("max-vel");
 const fps_label = document.getElementById("fps");
 const stream_btn = document.getElementById("stream-btn");
 const smoke_btn = document.getElementById("smoke-btn");
+const pressure_label = document.getElementById("pressure");
+const pressure_btn = document.getElementById("pressure-btn");
 
 const ctx = canvas.getContext("2d", { alpha: false });
 
@@ -30,15 +32,13 @@ function simulate() {
 function draw() {
 	// ctx.clearRect(0, 0, canvas.width, canvas.height);
 	let image = ctx.getImageData(0, 0, canvas.width, canvas.height);
-	let minP = 0;
-	let maxP = 100000000;
+	let minP = 1000000000;
+	let maxP = 0;
 	for (let l = 0; l < scene.sizeX * scene.sizeY; l++) {
 		minP = Math.min(minP, scene.fluid.p[l]);
 		maxP = Math.max(maxP, scene.fluid.p[l]);
 	}
-	if (performance.now() % 1000 < 10) {
-		console.log(minP, maxP);
-	}
+
 	for (let i = 0; i < scene.fluid.sizeY; i++) {
 		for (let j = 0; j < scene.fluid.sizeX; j++) {
 			let p = scene.fluid.p[i * scene.fluid.sizeX + j];
@@ -51,7 +51,7 @@ function draw() {
 			let sc = Math.floor(scale * h);
 			// ctx.fillRect(j * sc, i * sc, sc, sc);
 
-			// colors = colorGradient(p, minP, maxP);
+			if (scene.showPressure) colors = colorGradient(p, minP, maxP);
 			if (s == 0) {
 				colors[1] = 200;
 				colors[2] = 200;
@@ -102,17 +102,23 @@ function draw() {
 
 	max_vel_label.innerHTML = `Max velocity: ${scene.fluid.currMaxVel.toFixed(
 		2
-	)}`;
-	avg_vel_label.innerHTML = `Avg velocity: ${scene.fluid.avg_vel.toFixed(2)}`;
+	)} `;
+	avg_vel_label.innerHTML = `Avg velocity: ${scene.fluid.avg_vel.toFixed(
+		2
+	)} `;
+
+	pressure_label.innerHTML = `Max pressure: ${maxP.toFixed(
+		2
+	)}  Min pressure: ${minP.toFixed(2)} `;
 }
 
 function colorGradient(val, minVal, maxVal) {
 	val = Math.max(Math.min(val, maxVal), minVal);
 	let d = maxVal - minVal;
-	let k = (val - minVal) / d; // k -> [0, 1]
-	let type = Math.floor(k * 5);
+	let k = ((val - minVal) * 5) / d; // k -> [0, 1]
+	let type = Math.floor(k);
 	let r, g, b; // r,g,b are [0,1]
-
+	k = k - type;
 	switch (type) {
 		case 0:
 			r = 1 - k;
@@ -152,16 +158,10 @@ let startDrag = (x, y) => {
 	mouseDown = true;
 
 	x = mx / scale;
-	y = (canvas.height - my) / scale;
-	let j = Math.floor(x / h + 1);
-	let i = Math.floor(y / h + 1);
-	console.log(
-		j,
-		i,
-		scene.fluid.s[i * scene.fluid.sizeY + j],
-		i * scene.fluid.sizeY + j,
-		scene.fluid.sizeY
-	);
+	y = my / scale;
+	let j = Math.floor(x / h);
+	let i = Math.floor(y / h);
+	console.log(j, i, scene.fluid.p[i * scene.fluid.sizeX + j]);
 	// setObstacle(x, y, true);
 };
 let drag = (x, y) => {
@@ -208,12 +208,29 @@ let setupControls = () => {
 		{ passive: false }
 	);
 
+	document.addEventListener("keydown", (event) => {
+		switch (event.key) {
+			case "p":
+				scene.paused = !scene.paused;
+				break;
+			case "m":
+				scene.paused = false;
+				simulate();
+				scene.paused = true;
+				break;
+		}
+	});
+
 	stream_btn.addEventListener("click", (e) => {
 		scene.showStreamlines = e.target.checked;
 	});
 
 	smoke_btn.addEventListener("click", (e) => {
 		scene.showSmoke = e.target.checked;
+	});
+
+	pressure_btn.addEventListener("click", (e) => {
+		scene.showPressure = e.target.checked;
 	});
 };
 
@@ -227,7 +244,7 @@ function update() {
 	fps = 1 / delta;
 
 	let now = performance.now();
-	simulate();
+	if (!scene.paused) simulate();
 	calc_time = performance.now() - now;
 
 	now = performance.now();
