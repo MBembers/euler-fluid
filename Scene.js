@@ -1,19 +1,16 @@
 import Fluid from "./Fluid.js";
 
 export default class Scene {
-	constructor(real_width, real_height, h) {
-		this.real_width = real_width;
-		this.real_height = real_height;
+	constructor(simWidth, simHeight, h) {
+		this.simWidth = simWidth;
+		this.simHeight = simHeight;
 		this.h = h;
 		this.gravity = 9.81;
 		this.density = 1000;
 		this.dt = 1.0 / 60.0;
-		this.numIters = 40;
+		this.numIters = 50;
 		this.frameNr = 0;
 		this.overRelaxation = 1.9; // 1.9
-		this.obstacleX = 0.0;
-		this.obstacleY = 0.0;
-		this.obstacleRadius = 0.15;
 		this.paused = false;
 		this.sceneNr = 0;
 		this.showObstacle = false;
@@ -21,10 +18,11 @@ export default class Scene {
 		this.showVelocities = false;
 		this.showPressure = false;
 		this.showSmoke = true;
-		this.sizeX = Math.floor(this.real_width / h);
-		this.sizeY = Math.floor(this.real_height / h);
+		this.streamSegments = 10;
+		this.sizeX = Math.floor(this.simWidth / h);
+		this.sizeY = Math.floor(this.simHeight / h);
 
-		this.h = real_height / this.sizeY;
+		// this.h = simHeight / this.sizeY;
 		this.sizeX += 2;
 		this.sizeY += 2;
 
@@ -35,5 +33,8 @@ export default class Scene {
 			this.h,
 			this.gravity
 		);
+		this.fluid.initV = 3;
+
+		this.fluid.setupCells();
 	}
 }

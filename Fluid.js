@@ -1,78 +1,101 @@
-import Cell from "./Cell.js";
-
 // u are vertical velocities
 // v are horizontal velocities
 export default class Fluid {
 	constructor(density, sizeX, sizeY, h, gravity) {
-		this.ro = density; // we assume that density is constant
+		this.density = density; // we assume that density is constant
 		this.sizeX = sizeX;
 		this.sizeY = sizeY;
 		this.h = h;
 		this.gravity = gravity;
-		this.c = new Array(sizeY);
+		this.u = new Float32Array(this.sizeX * this.sizeY);
+		this.v = new Float32Array(this.sizeX * this.sizeY);
+		this.newU = new Float32Array(this.sizeX * this.sizeY);
+		this.newV = new Float32Array(this.sizeX * this.sizeY);
+		this.p = new Float32Array(this.sizeX * this.sizeY);
+		this.s = new Float32Array(this.sizeX * this.sizeY);
+		this.smoke = new Float32Array(this.sizeX * this.sizeY);
+		this.newSmoke = new Float32Array(this.sizeX * this.sizeY);
 		this.currMaxVel = 0;
 		this.avg_vel = 0;
-		this.initV = 4;
-		this.setupCells();
+		this.initV = 2;
+		this.smoke.fill(0);
 	}
 
 	integrate(dt) {
-		// add gravity
 		for (let i = 1; i < this.sizeY - 1; i++) {
 			for (let j = 1; j < this.sizeX - 1; j++) {
-				if (this.c[i][j].s != 0.0 && this.c[i + 1][j].s != 0.0)
-					this.c[i][j].u += this.gravity * dt;
+				if (
+					this.s[i * this.sizeX + j] != 0.0 &&
+					this.s[(i + 1) * this.sizeX + j] != 0.0
+				)
+					this.u[i * this.sizeX + j] += this.gravity * dt;
 			}
 		}
 	}
 
 	extrapolate() {
-		// for (let i = 0; i < this.sizeY; i++) {
-		// 	this.c[i][0].v = this.c[i][1].v;
-		// 	this.c[i][this.sizeX - 1].v = this.c[i][this.sizeX - 2].v;
-		// }
-		// for (let j = 0; j < this.sizeX; j++) {
-		// 	this.c[0][j].u = this.c[1][j].u;
-		// 	this.c[this.sizeY - 1][j].u = this.c[this.sizeY - 2][j].u;
-		// }
+		for (let i = 0; i < this.sizeY; i++) {
+			this.v[i * this.sizeX + 0] = this.v[i * this.sizeX + 1];
+			this.v[i * this.sizeX + this.sizeX - 1] =
+				this.v[i * this.sizeX + this.sizeX - 2];
+		}
+		for (let j = 0; j < this.sizeX; j++) {
+			this.u[0 * this.sizeX + j] = this.u[1 * this.sizeX + j];
+			this.u[(this.sizeY - 1) * this.sizeX + j] =
+				this.u[(this.sizeY - 2) * this.sizeX + j];
+		}
 	}
 
-	calcDivergence(x, y, overRelaxation) {
-		let divergence = 0;
-		divergence += overRelaxation * (this.c[y + 1][x].u - this.c[y][x].u);
-		divergence += overRelaxation * (this.c[y][x + 1].v - this.c[y][x].v);
-		return divergence;
-	}
+	// calcDivergence(x, y, overRelaxation) {
+	// 	let divergence = 0;
+	// 	divergence +=
+	// 		overRelaxation *
+	// 		(this.u[(y + 1) * this.sizeX + x] - this.u[y * this.sizeX + x]);
+	// 	divergence +=
+	// 		overRelaxation *
+	// 		(this.v[y * this.sizeX + x + 1] - this.v[y * this.sizeX + x]);
+	// 	return divergence;
+	// }
 
-	projection(numIters, overRelaxation) {
-		// console.log(this.c[20][20].smoke);
-		let divergence = 0;
+	projection(numIters, overRelaxation, dt) {
+		// console.log(this.smoke[(20) * this.sizeX + 20]);
+		let cp = (this.density * this.h) / dt;
+
 		for (let iter = 0; iter < numIters; iter++) {
 			for (let i = 1; i < this.sizeY - 1; i++) {
 				for (let j = 1; j < this.sizeX - 1; j++) {
-					if (this.c[i][j].s === 0) continue;
-					divergence = this.calcDivergence(j, i, overRelaxation);
+					if (this.s[i * this.sizeX + j] === 0) continue;
+
+					let divergence =
+						this.u[(i + 1) * this.sizeX + j] -
+						this.u[i * this.sizeX + j] +
+						this.v[i * this.sizeX + j + 1] -
+						this.v[i * this.sizeX + j];
+
 					let s_sum =
-						this.c[i - 1][j].s +
-						this.c[i + 1][j].s +
-						this.c[i][j - 1].s +
-						this.c[i][j + 1].s;
+						this.s[(i - 1) * this.sizeX + j] +
+						this.s[(i + 1) * this.sizeX + j] +
+						this.s[i * this.sizeX + j - 1] +
+						this.s[i * this.sizeX + j + 1];
+
+					let p = divergence / s_sum;
+
+					p *= overRelaxation;
+					this.p[i * this.sizeX + j] += p * cp;
+
 					if (s_sum === 0) continue;
-					this.c[i][j].u =
-						this.c[i][j].u +
-						(divergence * this.c[i - 1][j].s) / s_sum;
+					this.u[i * this.sizeX + j] +=
+						this.s[(i - 1) * this.sizeX + j] * p;
 
-					this.c[i][j].v =
-						this.c[i][j].v +
-						(divergence * this.c[i][j - 1].s) / s_sum;
+					this.v[i * this.sizeX + j] +=
+						p * this.s[i * this.sizeX + j - 1];
 
-					this.c[i + 1][j].u =
-						this.c[i + 1][j].u -
-						(divergence * this.c[i + 1][j].s) / s_sum;
+					this.u[(i + 1) * this.sizeX + j] -=
+						p * this.s[(i + 1) * this.sizeX + j];
 
-					this.c[i][j + 1].v =
-						this.c[i][j + 1].v -
-						(divergence * this.c[i][j + 1].s) / s_sum;
+					this.v[i * this.sizeX + j + 1] -=
+						p * this.s[i * this.sizeX + j + 1];
+					p = -p;
 				}
 			}
 		}
@@ -81,53 +104,79 @@ export default class Fluid {
 	velocityAdvection(dt) {
 		this.currMaxVel = 0;
 		let velSum = 0;
-		let newCells = this.copyCells();
+		this.newU.set(this.u);
+		this.newV.set(this.v);
+		this.newSmoke.set(this.smoke);
 		let _h = 1 / this.h;
 		let _h2 = this.h * 0.5;
 
 		for (let i = 1; i < this.sizeY - 1; i++) {
 			for (let j = 1; j < this.sizeX - 1; j++) {
-				if (this.c[i][j].s === 0) continue;
+				if (this.s[i * this.sizeX + j] === 0) continue;
 
 				let x, y;
 				// u component advection
-				if (this.c[i - 1][j].s != 0 && j < this.sizeX - 1) {
-					let u = this.c[i][j].u;
+				if (
+					this.s[(i - 1) * this.sizeX + j] != 0 &&
+					j < this.sizeX - 1
+				) {
+					let u = this.u[i * this.sizeX + j];
 					let v_avg =
-						(this.c[i][j].v +
-							this.c[i][j + 1].v +
-							this.c[i - 1][j].v +
-							this.c[i - 1][j + 1].v) /
+						(this.v[i * this.sizeX + j] +
+							this.v[i * this.sizeX + j + 1] +
+							this.v[(i - 1) * this.sizeX + j] +
+							this.v[(i - 1) * this.sizeX + j + 1]) /
 						4;
 
 					x = j * this.h + this.h / 2 - v_avg * dt;
 					y = i * this.h - u * dt;
 					// calculate advection of velocities with this backtracking or something bruh
-					newCells[i][j].u = this.sampleField(x, y, "u", _h, _h2);
+					this.newU[i * this.sizeX + j] = this.sampleField(
+						x,
+						y,
+						"u",
+						_h,
+						_h2
+					);
 				}
 
 				// v component advection
-				if (this.c[i][j - 1].s != 0.0 && i < this.sizeY - 1) {
-					let v = this.c[i][j].v;
+				if (
+					this.s[i * this.sizeX + j - 1] != 0.0 &&
+					i < this.sizeY - 1
+				) {
+					let v = this.v[i * this.sizeX + j];
 					let u_avg =
-						(this.c[i][j].u +
-							this.c[i][j - 1].u +
-							this.c[i + 1][j - 1].u +
-							this.c[i + 1][j].u) /
+						(this.u[i * this.sizeX + j] +
+							this.u[i * this.sizeX + j - 1] +
+							this.u[(i + 1) * this.sizeX + j - 1] +
+							this.u[(i + 1) * this.sizeX + j]) /
 						4;
 
 					x = j * this.h - v * dt;
 					y = i * this.h + this.h / 2 - u_avg * dt;
-					newCells[i][j].v = this.sampleField(x, y, "v", _h, _h2);
+					this.newV[i * this.sizeX + j] = this.sampleField(
+						x,
+						y,
+						"v",
+						_h,
+						_h2
+					);
 				}
 
 				// smoke advection
 				if (j < this.sizeX - 1 && i < this.sizeY - 1) {
-					let u = (this.c[i][j].u + this.c[i + 1][j].u) * 0.5;
-					let v = (this.c[i][j].v + this.c[i][j + 1].v) * 0.5;
+					let u =
+						(this.u[i * this.sizeX + j] +
+							this.u[(i + 1) * this.sizeX + j]) *
+						0.5;
+					let v =
+						(this.v[i * this.sizeX + j] +
+							this.v[i * this.sizeX + j + 1]) *
+						0.5;
 					x = j * this.h + this.h / 2 - dt * v;
 					y = i * this.h + this.h / 2 - dt * u;
-					newCells[i][j].smoke = this.sampleField(
+					this.newSmoke[i * this.sizeX + j] = this.sampleField(
 						x,
 						y,
 						"smoke",
@@ -135,14 +184,19 @@ export default class Fluid {
 						_h2
 					);
 				}
-
-				let vel = this.calcVelocity(newCells[i][j]);
+				let vel = this.calcVelocity(i, j);
 				velSum += vel;
 				if (vel > this.currMaxVel) this.currMaxVel = vel;
+				if (!velSum) {
+					console.log("error");
+					let a;
+				}
 			}
 		}
 		this.avg_vel = velSum / ((this.sizeX - 1) * (this.sizeY - 1));
-		this.c = newCells;
+		this.u.set(this.newU);
+		this.v.set(this.newV);
+		this.smoke.set(this.newSmoke);
 	}
 
 	// smokeAdvection(dt) {}
@@ -152,16 +206,19 @@ export default class Fluid {
 		y = Math.max(Math.min(y, this.sizeY * this.h), this.h);
 		let dx = 0; // correction (0 or h/2)
 		let dy = 0;
-
+		let f;
 		if (field === "v") {
 			dy = _h2;
+			f = this.v;
 		}
 		if (field === "u") {
 			dx = _h2;
+			f = this.u;
 		}
 		if (field === "smoke") {
 			dx = _h2;
 			dy = _h2;
+			f = this.smoke;
 		}
 		let x0 = Math.min(Math.floor((x - dx) * _h), this.sizeX - 1);
 		let y0 = Math.min(Math.floor((y - dy) * _h), this.sizeY - 1);
@@ -174,164 +231,98 @@ export default class Fluid {
 		let w_y0 = 1 - w_y1;
 
 		let sample_weighted =
-			w_y0 * w_x0 * this.c[y0][x0][field] +
-			w_y0 * w_x1 * this.c[y0][x1][field] +
-			w_y1 * w_x0 * this.c[y1][x0][field] +
-			w_y1 * w_x1 * this.c[y1][x1][field];
+			w_y0 * w_x0 * f[y0 * this.sizeX + x0] +
+			w_y0 * w_x1 * f[y0 * this.sizeX + x1] +
+			w_y1 * w_x0 * f[y1 * this.sizeX + x0] +
+			w_y1 * w_x1 * f[y1 * this.sizeX + x1];
 
 		return sample_weighted;
-		// if (field === "u") {
-		// 	if (dy < _h2) {
-		// 		dy += _h2;
-		// 		i0 = i - 1;
-		// 		i1 = i;
-		// 	} else dy -= _h2;
-
-		// 	let wx0 = 1 - dx * _h;
-		// 	let wx1 = dx * _h;
-		// 	let wy0 = 1 - dy * _h;
-		// 	let wy1 = dy * _h;
-
-		// 	// if (j0 < 7) console.log(i0, i1, j0, j1);
-		// 	let u_weighted =
-		// 		wy0 * wx0 * this.c[i0][j0].u +
-		// 		wy0 * wx1 * this.c[i0][j1].u +
-		// 		wy1 * wx0 * this.c[i1][j0].u +
-		// 		wy1 * wx1 * this.c[i1][j1].u;
-
-		// 	return u_weighted;
-		// }
-		// if (field === "v") {
-		// 	let dy = y - i * this.h;
-		// 	let dx = x - j * this.h;
-		// 	if (dx < _h2) {
-		// 		dx += _h2;
-		// 		j0 = j - 1;
-		// 		j1 = j;
-		// 	} else dx -= _h2;
-
-		// 	let wx0 = 1 - dx * _h;
-		// 	let wx1 = dx * _h;
-		// 	let wy0 = 1 - dy * _h;
-		// 	let wy1 = dy * _h;
-
-		// 	let v_weighted =
-		// 		wy0 * wx0 * this.c[i0][j0].v +
-		// 		wy0 * wx1 * this.c[i0][j1].v +
-		// 		wy1 * wx0 * this.c[i1][j0].v +
-		// 		wy1 * wx1 * this.c[i1][j1].v;
-
-		// 	return v_weighted;
-		// }
-		// if (field === "smoke") {
-		// 	let dy = y - i * this.h;
-		// 	let dx = x - j * this.h;
-		// 	if (dx < _h2) {
-		// 		dx += _h2;
-		// 		j0 = j - 1;
-		// 		j1 = j;
-		// 	} else dx -= _h2;
-		// 	if (dy < _h2) {
-		// 		dy += _h2;
-		// 		i0 = i - 1;
-		// 		i1 = i;
-		// 	} else dy -= _h2;
-
-		// 	let wx0 = 1 - dx * _h;
-		// 	let wx1 = dx * _h;
-		// 	let wy0 = 1 - dy * _h;
-		// 	let wy1 = dy * _h;
-		// 	let smoke_weighted =
-		// 		wy0 * wx0 * this.c[i0][j0].smoke +
-		// 		wy0 * wx1 * this.c[i0][j1].smoke +
-		// 		wy1 * wx0 * this.c[i1][j0].smoke +
-		// 		wy1 * wx1 * this.c[i1][j1].smoke;
-		// 	// if (i === 10) console.log(smoke_weighted);
-		// 	return smoke_weighted;
-		// }
 	}
 
 	simulate(numIters, overRelaxation, dt) {
 		// this.integrate(dt);
-		this.projection(numIters, overRelaxation);
-		this.extrapolate();
+		this.projection(numIters, overRelaxation, dt);
+		// this.extrapolate();
 		this.velocityAdvection(dt);
 	}
 
 	setupCells() {
-		console.log("size:", this.sizeX * this.sizeY);
-		const smoke = 0;
-		for (let i = 0; i < this.sizeY; i++) {
-			this.c[i] = new Array(this.sizeX);
-		}
+		console.log("sizes:", this.sizeX, this.sizeY, this.sizeX * this.sizeY);
+		this.u.fill(0);
+		this.v.fill(0);
+		this.s.fill(1);
 		for (let i = 0; i < this.sizeY; i++) {
 			for (let j = 0; j < this.sizeX; j++) {
 				if (i === 0) {
-					this.c[i][j] = new Cell(0, 0, 0, 1, smoke);
-				} else if (i === this.sizeY - 1) {
-					this.c[i][j] = new Cell(0, 0, 0, 1, smoke);
-				} else if (j === 0) {
-					this.c[i][j] = new Cell(0, 0, 0, 1, smoke);
-				} else if (j === this.sizeX - 1) {
-					this.c[i][j] = new Cell(0, 0, 1, 1, smoke);
-					// liquid
-				} else this.c[i][j] = new Cell(0, 0, 1, 1, smoke);
+					this.s[i * this.sizeX + j] = 0;
+				}
+				if (i === this.sizeY - 1) {
+					this.s[i * this.sizeX + j] = 0;
+				}
+				if (j === 0) {
+					this.s[i * this.sizeX + j] = 0;
+				}
+				if (j === this.sizeX - 1) {
+					this.s[i * this.sizeX + j] = 1;
+				}
 
 				// place Smokers
-				if (j < 1 && i > 40 && i < 65) {
-					this.c[i][j].smoke = 1.0;
-				}
-				// if (j < 1 && i >= 0 && i < 10) {
-				// 	this.c[i][j].smoke = 1.0;
-				// }
-
-				// if (j < 1 && i < this.sizeY - 1 && i > this.sizeY - 10) {
-				// 	this.c[i][j].s = 0;
-				// 	this.c[i][j].smoke = 1.0;
-				// }
-				// place obstacles
-				if (
-					j > 40 &&
-					j < 60 &&
-					i > 40 &&
-					i < 65
-					// (j > 50 && j < 60 && i > 25 && i < 50)
-				) {
-					this.c[i][j].s = 0;
-				}
+				this.placeRectSmoker(0, 1, 0.2, 0.35);
 
 				// velocities;
 				if (j === 1) {
-					this.c[i][j].v = this.initV;
+					this.v[i * this.sizeX + j] = this.initV;
 				}
-				// if (i === this.sizeY - 1) {
-				// 	this.c[i][j].u = -4;
-				// }
 			}
 		}
 	}
 
-	copyCells() {
-		let copy = new Array(this.sizeY);
-		for (let i = 0; i < this.sizeY; i++) {
-			copy[i] = new Array(this.sizeX);
-		}
+	calcVelocity(x, y) {
+		if (x < 0 || y < 0 || x >= this.sizeX || y >= this.sizeY) return 0;
+		return Math.sqrt(
+			this.u[y * this.sizeX + x] ** 2 + this.v[y * this.sizeX + x] ** 2
+		);
+	}
+
+	placeRectObstacle(x, y, w, h) {
 		for (let i = 0; i < this.sizeY; i++) {
 			for (let j = 0; j < this.sizeX; j++) {
-				copy[i][j] = new Cell(
-					this.c[i][j].u,
-					this.c[i][j].v,
-					this.c[i][j].s,
-					this.c[i][j].p,
-					this.c[i][j].smoke,
-					this.c[i][j].color
-				);
+				if (
+					j * this.h > x &&
+					j * this.h < x + w &&
+					i * this.h > y &&
+					i * this.h < y + h
+				) {
+					this.s[i * this.sizeX + j] = 0;
+				}
 			}
 		}
-		return copy;
 	}
 
-	calcVelocity(cell) {
-		return Math.sqrt(cell.u ** 2 + cell.v ** 2);
+	placeRoundObstacle(x, y, r) {
+		for (let i = 0; i < this.sizeY; i++) {
+			for (let j = 0; j < this.sizeX; j++) {
+				let dx = j * this.h - x;
+				let dy = i * this.h - y;
+				if (dx * dx + dy * dy < r * r) {
+					this.s[i * this.sizeX + j] = 0;
+				}
+			}
+		}
+	}
+
+	placeRectSmoker(x, y, w, h) {
+		for (let i = 0; i < this.sizeY; i++) {
+			for (let j = 0; j < this.sizeX; j++) {
+				if (
+					j * this.h >= x - w / 2 &&
+					j * this.h <= x + w / 2 &&
+					i * this.h >= y - h / 2 &&
+					i * this.h <= y + h / 2
+				) {
+					this.smoke[i * this.sizeX + j] = 1;
+				}
+			}
+		}
 	}
 }
