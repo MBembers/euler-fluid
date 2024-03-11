@@ -29,6 +29,8 @@ function simulate() {
 	scene.fluid.simulate(scene.numIters, scene.overRelaxation, scene.dt);
 }
 
+// const kernel = makeGaussKernel(1);
+
 function draw() {
 	// ctx.clearRect(0, 0, canvas.width, canvas.height);
 	let image = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -75,6 +77,8 @@ function draw() {
 			}
 		}
 	}
+
+	// for (let ch = 0; ch < 3; ch++) gauss_internal(image, kernel, ch, false);
 
 	ctx.putImageData(image, 0, 0);
 	// stream lines
@@ -147,6 +151,64 @@ function colorGradient(val, minVal, maxVal) {
 			break;
 	}
 	return [r * 255, g * 255, b * 255];
+}
+
+function makeGaussKernel(sigma) {
+	const GAUSSKERN = 6.0;
+	let dim = parseInt(Math.max(3.0, GAUSSKERN * sigma));
+	let sqrtSigmaPi2 = Math.sqrt(Math.PI * 2.0) * sigma;
+	let s2 = 2.0 * sigma * sigma;
+	let sum = 0.0;
+
+	let kernel = new Float32Array(dim - !(dim & 1)); // Make it odd number
+	const half = parseInt(kernel.length / 2);
+	for (let j = 0, i = -half; j < kernel.length; i++, j++) {
+		kernel[j] = Math.exp(-(i * i) / s2) / sqrtSigmaPi2;
+		sum += kernel[j];
+	}
+	// Normalize the gaussian kernel to prevent image darkening/brightening
+	for (let i = 0; i < dim; i++) {
+		kernel[i] /= sum;
+	}
+	return kernel;
+}
+
+function gauss_internal(pixels, kernel, ch, gray) {
+	var data = pixels.data;
+	var w = pixels.width;
+	var h = pixels.height;
+	var buff = new Uint8Array(w * h);
+	var mk = Math.floor(kernel.length / 2);
+	var kl = kernel.length;
+
+	// First step process columns
+	for (var j = 0, hw = 0; j < h; j++, hw += w) {
+		for (var i = 0; i < w; i++) {
+			var sum = 0;
+			for (var k = 0; k < kl; k++) {
+				var col = i + (k - mk);
+				col = col < 0 ? 0 : col >= w ? w - 1 : col;
+				sum += data[(hw + col) * 4 + ch] * kernel[k];
+			}
+			buff[hw + i] = sum;
+		}
+	}
+
+	// Second step process rows
+	for (var j = 0, offset = 0; j < h; j++, offset += w) {
+		for (var i = 0; i < w; i++) {
+			var sum = 0;
+			for (k = 0; k < kl; k++) {
+				var row = j + (k - mk);
+				row = row < 0 ? 0 : row >= h ? h - 1 : row;
+				sum += buff[row * w + i] * kernel[k];
+			}
+			var off = (j * w + i) * 4;
+			!gray
+				? (data[off + ch] = sum)
+				: (data[off] = data[off + 1] = data[off + 2] = sum);
+		}
+	}
 }
 
 // controls -----------------------------------------------------
