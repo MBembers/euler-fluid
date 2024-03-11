@@ -118,7 +118,7 @@ function draw() {
 
 function colorGradient(val, minVal, maxVal) {
 	val = Math.max(Math.min(val, maxVal), minVal);
-	let d = maxVal - minVal;
+	let d = maxVal - minVal + 0.00001;
 	let k = ((val - minVal) * 5) / d; // k -> [0, 1]
 	let type = Math.floor(k);
 	let r, g, b; // r,g,b are [0,1]
