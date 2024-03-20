@@ -34,7 +34,13 @@ export default class Scene {
 			this.gravity
 		);
 		this.fluid.initV = 3;
-
 		this.fluid.setupCells();
+		// for recording
+		this.fps = 60;
+		this.fluidFrames = [];
+	}
+
+	recordFrame() {
+		this.fluidFrames.push(this.fluid.getFrame());
 	}
 }

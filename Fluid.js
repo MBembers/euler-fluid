@@ -1,3 +1,4 @@
+import FluidFrame from "./FluidFrame";
 // u are vertical velocities
 // v are horizontal velocities
 export default class Fluid {
@@ -313,5 +314,17 @@ export default class Fluid {
 				}
 			}
 		}
+	}
+
+	getFrame() {
+		const frame = new FluidFrame(this.sizeX, this.sizeY, this.h);
+		frame.u.set(this.u);
+		frame.v.set(this.v);
+		frame.p.set(this.p);
+		frame.s.set(this.s);
+		frame.smoke.set(this.smoke);
+		frame.avg_vel = this.avg_vel;
+		frame.currMaxVel = this.currMaxVel;
+		return frame;
 	}
 }
