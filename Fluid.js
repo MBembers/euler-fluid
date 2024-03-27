@@ -1,4 +1,3 @@
-import FluidFrame from "./FluidFrame";
 // u are vertical velocities
 // v are horizontal velocities
 export default class Fluid {
@@ -120,7 +119,7 @@ export default class Fluid {
 
 					x = j * this.h + this.h / 2 - v_avg * dt;
 					y = i * this.h - u * dt;
-					// calculate advection of velocities with this backtracking or something bruh
+					// calculate advection of velocities with backward euler
 					this.newU[i * this.sizeX + j] = this.sampleField(
 						x,
 						y,
@@ -316,15 +315,15 @@ export default class Fluid {
 		}
 	}
 
-	getFrame() {
-		const frame = new FluidFrame(this.sizeX, this.sizeY, this.h);
-		frame.u.set(this.u);
-		frame.v.set(this.v);
-		frame.p.set(this.p);
-		frame.s.set(this.s);
-		frame.smoke.set(this.smoke);
-		frame.avg_vel = this.avg_vel;
-		frame.currMaxVel = this.currMaxVel;
-		return frame;
-	}
+	// getFrame() {
+	// 	const frame = new FluidFrame(this.sizeX, this.sizeY, this.h);
+	// 	frame.u.set(this.u);
+	// 	frame.v.set(this.v);
+	// 	frame.p.set(this.p);
+	// 	frame.s.set(this.s);
+	// 	frame.smoke.set(this.smoke);
+	// 	frame.avg_vel = this.avg_vel;
+	// 	frame.currMaxVel = this.currMaxVel;
+	// 	return frame;
+	// }
 }

@@ -36,11 +36,13 @@ export default class Scene {
 		this.fluid.initV = 3;
 		this.fluid.setupCells();
 		// for recording
+		this.recording = false;
+		this.playing = false;
 		this.fps = 60;
-		this.fluidFrames = [];
+		this.frames = [];
 	}
 
-	recordFrame() {
-		this.fluidFrames.push(this.fluid.getFrame());
+	recordFrame(frame) {
+		this.frames.push(frame);
 	}
 }

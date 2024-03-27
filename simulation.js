@@ -9,17 +9,29 @@ const smoke_btn = document.getElementById("smoke-btn");
 const pressure_label = document.getElementById("pressure");
 const pressure_btn = document.getElementById("pressure-btn");
 
-const ctx = canvas.getContext("2d", { alpha: false });
+// canvas setup ----------------------------------------------------
 
-canvas.width = window.innerWidth - 20;
-canvas.height = window.innerHeight - 100;
+let temp_width = (window.innerWidth * 3) / 4;
+let temp_height = window.innerHeight - 200;
 
 let simHeight = 2;
-let scale = Math.floor(canvas.height / simHeight);
-let simWidth = canvas.width / scale;
+let h = 0.02;
+let scale = temp_height / simHeight;
+let simWidth = temp_width / scale;
+
+let sc = Math.floor(scale * h);
+scale = sc / h;
+temp_height = scale * simHeight;
+temp_width = scale * simWidth;
+canvas.width = temp_width + 2 * sc;
+canvas.height = temp_height + 2 * sc;
+
+console.log("canvas size", canvas.width, canvas.height);
+console.log("simulation size", simWidth, simHeight);
+console.log("canv/sim", canvas.width / simWidth, canvas.height / simHeight);
+const ctx = canvas.getContext("2d", { alpha: false });
 
 // scene setup -----------------------------------------------------
-let h = 0.01;
 const scene = new Scene(simWidth, simHeight, h);
 // scene.fluid.placeRectObstacle(1, 1, 0.2, 0.2);\
 scene.fluid.placeRoundObstacle(1.2, 1, 0.28);
@@ -47,9 +59,6 @@ function draw() {
 			let s = scene.fluid.s[i * scene.fluid.sizeX + j];
 			let colors = [255, 255, 255]; // r, g, b
 
-			let sc = Math.floor(scale * h);
-			// ctx.fillRect(j * sc, i * sc, sc, sc);
-
 			if (scene.showPressure) colors = colorGradient(p, minP, maxP);
 			if (s == 0) {
 				colors[1] = 200;
@@ -61,8 +70,11 @@ function draw() {
 				colors[2] -= smoke * 255;
 			}
 
-			let x = j * sc;
-			let y = i * sc;
+			let x = j * sc; // in pixels
+			let y = i * sc; // in pixels
+			if (i == scene.fluid.sizeY - 1 && j == scene.fluid.sizeX - 1)
+				console.log(x, y);
+			// process every pixel in a square at position (x,y), square size is h (meters) irl, h * scale on screen (pixels)
 			for (let yp = y; yp < y + sc; yp++) {
 				let index = (x + yp * canvas.width) * 4;
 				for (let xp = x; xp < x + sc; xp++) {
@@ -97,6 +109,10 @@ function draw() {
 				}
 				ctx.stroke();
 			}
+	}
+
+	if (scene.recording) {
+		scene.recordFrame(ctx.getImageData(0, 0, canvas.width, canvas.height));
 	}
 
 	max_vel_label.innerHTML = `Max velocity: ${scene.fluid.currMaxVel.toFixed(
