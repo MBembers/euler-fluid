@@ -26,14 +26,8 @@ export default class Scene {
 		this.sizeX += 2;
 		this.sizeY += 2;
 
-		this.fluid = new Fluid(
-			this.density,
-			this.sizeX,
-			this.sizeY,
-			this.h,
-			this.gravity
-		);
-		this.fluid.initV = 3;
+		this.fluid = new Fluid(this.density, this.sizeX, this.sizeY, this.h, this.gravity);
+		this.fluid.initV = 5;
 		this.fluid.setupCells();
 		// for recording
 		this.recording = false;

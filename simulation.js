@@ -72,8 +72,6 @@ function draw() {
 
 			let x = j * sc; // in pixels
 			let y = i * sc; // in pixels
-			if (i == scene.fluid.sizeY - 1 && j == scene.fluid.sizeX - 1)
-				console.log(x, y);
 			// process every pixel in a square at position (x,y), square size is h (meters) irl, h * scale on screen (pixels)
 			for (let yp = y; yp < y + sc; yp++) {
 				let index = (x + yp * canvas.width) * 4;
@@ -103,8 +101,7 @@ function draw() {
 					let v = scene.fluid.sampleField(x, y, "v", 1 / h, h / 2);
 					x = x + v * 0.01;
 					y = y + u * 0.01;
-					if (x < 0 || x > canvas.width || y < 0 || y > canvas.height)
-						break;
+					if (x < 0 || x > canvas.width || y < 0 || y > canvas.height) break;
 					ctx.lineTo(x * scale, y * scale);
 				}
 				ctx.stroke();
@@ -115,16 +112,10 @@ function draw() {
 		scene.recordFrame(ctx.getImageData(0, 0, canvas.width, canvas.height));
 	}
 
-	max_vel_label.innerHTML = `Max velocity: ${scene.fluid.currMaxVel.toFixed(
-		2
-	)} `;
-	avg_vel_label.innerHTML = `Avg velocity: ${scene.fluid.avg_vel.toFixed(
-		2
-	)} `;
+	max_vel_label.innerHTML = `Max velocity: ${scene.fluid.currMaxVel.toFixed(2)} `;
+	avg_vel_label.innerHTML = `Avg velocity: ${scene.fluid.avg_vel.toFixed(2)} `;
 
-	pressure_label.innerHTML = `Max pressure: ${maxP.toFixed(
-		2
-	)}  Min pressure: ${minP.toFixed(2)} `;
+	pressure_label.innerHTML = `Max pressure: ${maxP.toFixed(2)}  Min pressure: ${minP.toFixed(2)} `;
 }
 
 function colorGradient(val, minVal, maxVal) {
@@ -176,7 +167,6 @@ let startDrag = (x, y) => {
 	y = my / scale;
 	let j = Math.floor(x / h);
 	let i = Math.floor(y / h);
-	console.log(j, i, scene.fluid.p[i * scene.fluid.sizeX + j]);
 	// setObstacle(x, y, true);
 };
 let drag = (x, y) => {
@@ -266,11 +256,7 @@ function update() {
 	draw();
 	draw_time = performance.now() - now;
 
-	fps_label.innerHTML = `FPS: ${fps.toFixed(
-		2
-	)} Calc time: ${calc_time.toFixed(2)}ms Draw time: ${draw_time.toFixed(
-		2
-	)}ms`;
+	fps_label.innerHTML = `FPS: ${fps.toFixed(2)} Calc time: ${calc_time.toFixed(2)}ms Draw time: ${draw_time.toFixed(2)}ms`;
 	requestAnimationFrame(update);
 }
 

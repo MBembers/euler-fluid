@@ -24,10 +24,7 @@ export default class Fluid {
 	integrate(dt) {
 		for (let i = 1; i < this.sizeY - 1; i++) {
 			for (let j = 1; j < this.sizeX - 1; j++) {
-				if (
-					this.s[i * this.sizeX + j] != 0.0 &&
-					this.s[(i + 1) * this.sizeX + j] != 0.0
-				)
+				if (this.s[i * this.sizeX + j] != 0.0 && this.s[(i + 1) * this.sizeX + j] != 0.0)
 					this.u[i * this.sizeX + j] += this.gravity * dt;
 			}
 		}
@@ -36,13 +33,11 @@ export default class Fluid {
 	extrapolate() {
 		for (let i = 0; i < this.sizeY; i++) {
 			this.v[i * this.sizeX + 0] = this.v[i * this.sizeX + 1];
-			this.v[i * this.sizeX + this.sizeX - 1] =
-				this.v[i * this.sizeX + this.sizeX - 2];
+			this.v[i * this.sizeX + this.sizeX - 1] = this.v[i * this.sizeX + this.sizeX - 2];
 		}
 		for (let j = 0; j < this.sizeX; j++) {
 			this.u[0 * this.sizeX + j] = this.u[1 * this.sizeX + j];
-			this.u[(this.sizeY - 1) * this.sizeX + j] =
-				this.u[(this.sizeY - 2) * this.sizeX + j];
+			this.u[(this.sizeY - 1) * this.sizeX + j] = this.u[(this.sizeY - 2) * this.sizeX + j];
 		}
 	}
 
@@ -74,17 +69,13 @@ export default class Fluid {
 					this.p[i * this.sizeX + j] += p * -cp;
 
 					if (s_sum === 0) continue;
-					this.u[i * this.sizeX + j] +=
-						this.s[(i - 1) * this.sizeX + j] * p;
+					this.u[i * this.sizeX + j] += this.s[(i - 1) * this.sizeX + j] * p;
 
-					this.v[i * this.sizeX + j] +=
-						p * this.s[i * this.sizeX + j - 1];
+					this.v[i * this.sizeX + j] += p * this.s[i * this.sizeX + j - 1];
 
-					this.u[(i + 1) * this.sizeX + j] -=
-						p * this.s[(i + 1) * this.sizeX + j];
+					this.u[(i + 1) * this.sizeX + j] -= p * this.s[(i + 1) * this.sizeX + j];
 
-					this.v[i * this.sizeX + j + 1] -=
-						p * this.s[i * this.sizeX + j + 1];
+					this.v[i * this.sizeX + j + 1] -= p * this.s[i * this.sizeX + j + 1];
 				}
 			}
 		}
@@ -105,10 +96,7 @@ export default class Fluid {
 
 				let x, y;
 				// u component advection
-				if (
-					this.s[(i - 1) * this.sizeX + j] != 0 &&
-					j < this.sizeX - 1
-				) {
+				if (this.s[i * this.sizeX + j] != 0 && j < this.sizeX - 1) {
 					let u = this.u[i * this.sizeX + j];
 					let v_avg =
 						(this.v[i * this.sizeX + j] +
@@ -120,20 +108,11 @@ export default class Fluid {
 					x = j * this.h + this.h / 2 - v_avg * dt;
 					y = i * this.h - u * dt;
 					// calculate advection of velocities with backward euler
-					this.newU[i * this.sizeX + j] = this.sampleField(
-						x,
-						y,
-						"u",
-						_h,
-						_h2
-					);
+					this.newU[i * this.sizeX + j] = this.sampleField(x, y, "u", _h, _h2);
 				}
 
 				// v component advection
-				if (
-					this.s[i * this.sizeX + j - 1] != 0.0 &&
-					i < this.sizeY - 1
-				) {
+				if (this.s[i * this.sizeX + j] != 0.0 && i < this.sizeY - 1) {
 					let v = this.v[i * this.sizeX + j];
 					let u_avg =
 						(this.u[i * this.sizeX + j] +
@@ -144,42 +123,20 @@ export default class Fluid {
 
 					x = j * this.h - v * dt;
 					y = i * this.h + this.h / 2 - u_avg * dt;
-					this.newV[i * this.sizeX + j] = this.sampleField(
-						x,
-						y,
-						"v",
-						_h,
-						_h2
-					);
+					this.newV[i * this.sizeX + j] = this.sampleField(x, y, "v", _h, _h2);
 				}
 
 				// smoke advection
 				if (j < this.sizeX - 1 && i < this.sizeY - 1) {
-					let u =
-						(this.u[i * this.sizeX + j] +
-							this.u[(i + 1) * this.sizeX + j]) *
-						0.5;
-					let v =
-						(this.v[i * this.sizeX + j] +
-							this.v[i * this.sizeX + j + 1]) *
-						0.5;
+					let u = (this.u[i * this.sizeX + j] + this.u[(i + 1) * this.sizeX + j]) * 0.5;
+					let v = (this.v[i * this.sizeX + j] + this.v[i * this.sizeX + j + 1]) * 0.5;
 					x = j * this.h + this.h / 2 - dt * v;
 					y = i * this.h + this.h / 2 - dt * u;
-					this.newSmoke[i * this.sizeX + j] = this.sampleField(
-						x,
-						y,
-						"smoke",
-						_h,
-						_h2
-					);
+					this.newSmoke[i * this.sizeX + j] = this.sampleField(x, y, "smoke", _h, _h2);
 				}
 				let vel = this.calcVelocity(i, j);
 				velSum += vel;
 				if (vel > this.currMaxVel) this.currMaxVel = vel;
-				if (!velSum) {
-					console.log("error");
-					let a;
-				}
 			}
 		}
 		this.avg_vel = velSum / ((this.sizeX - 1) * (this.sizeY - 1));
@@ -230,6 +187,7 @@ export default class Fluid {
 
 	simulate(numIters, overRelaxation, dt) {
 		// this.integrate(dt);
+		dt = 1 / 1000;
 		this.projection(numIters, overRelaxation, dt);
 		// this.extrapolate();
 		this.velocityAdvection(dt);
@@ -268,20 +226,13 @@ export default class Fluid {
 
 	calcVelocity(x, y) {
 		if (x < 0 || y < 0 || x >= this.sizeX || y >= this.sizeY) return 0;
-		return Math.sqrt(
-			this.u[y * this.sizeX + x] ** 2 + this.v[y * this.sizeX + x] ** 2
-		);
+		return Math.sqrt(this.u[y * this.sizeX + x] ** 2 + this.v[y * this.sizeX + x] ** 2);
 	}
 
 	placeRectObstacle(x, y, w, h) {
 		for (let i = 0; i < this.sizeY; i++) {
 			for (let j = 0; j < this.sizeX; j++) {
-				if (
-					j * this.h > x &&
-					j * this.h < x + w &&
-					i * this.h > y &&
-					i * this.h < y + h
-				) {
+				if (j * this.h > x && j * this.h < x + w && i * this.h > y && i * this.h < y + h) {
 					this.s[i * this.sizeX + j] = 0;
 				}
 			}
@@ -303,12 +254,7 @@ export default class Fluid {
 	placeRectSmoker(x, y, w, h) {
 		for (let i = 0; i < this.sizeY; i++) {
 			for (let j = 0; j < this.sizeX; j++) {
-				if (
-					j * this.h >= x - w / 2 &&
-					j * this.h <= x + w / 2 &&
-					i * this.h >= y - h / 2 &&
-					i * this.h <= y + h / 2
-				) {
+				if (j * this.h >= x - w / 2 && j * this.h <= x + w / 2 && i * this.h >= y - h / 2 && i * this.h <= y + h / 2) {
 					this.smoke[i * this.sizeX + j] = 1;
 				}
 			}
